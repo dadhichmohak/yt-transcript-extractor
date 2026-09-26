@@ -78,11 +78,15 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   } catch (error) {
     if (error instanceof TranscriptServiceError) {
+      console.error(`[playlist] ${playlistId} failed code=${error.code} status=${error.status} message=${error.message}`);
+
       return NextResponse.json(
         { error: { code: error.code, message: error.message } },
         { status: error.status },
       );
     }
+
+    console.error(`[playlist] ${playlistId} failed unexpectedly`, error);
 
     return NextResponse.json(
       { error: { code: "PLAYLIST_UNAVAILABLE", message: "The playlist could not be loaded." } },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 
 import { PlaylistPanel } from "@/components/playlist-panel";
 import { ResultCard, downloadTranscriptFile } from "@/components/result-card";
@@ -11,6 +11,35 @@ type Status = "idle" | "loading" | "success" | "error";
 type Mode = "single" | "playlist";
 type ApiError = { code: string; message: string };
 
+const LOADING_STAGES = [
+  "Reading captions...",
+  "Fetching caption tracks...",
+  "Cleaning up the text...",
+  "Almost there...",
+];
+
+const STAGE_INTERVAL_MS = 2600;
+
+function ResultSkeleton() {
+  return (
+    <section className="result" aria-hidden="true">
+      <div className="resultHeader">
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="skeleton" data-width="title" />
+          <div className="skeleton" data-width="meta" />
+        </div>
+      </div>
+      <div className="skeletonStack">
+        <div className="skeleton" data-width="long" />
+        <div className="skeleton" data-width="full" />
+        <div className="skeleton" data-width="medium" />
+        <div className="skeleton" data-width="full" />
+        <div className="skeleton" data-width="short" />
+      </div>
+    </section>
+  );
+}
+
 export function TranscriptApp() {
   const [mode, setMode] = useState<Mode>("single");
   const [url, setUrl] = useState("");
@@ -19,7 +48,20 @@ export function TranscriptApp() {
   const [error, setError] = useState<ApiError | null>(null);
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [stage, setStage] = useState(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    if (status !== "loading") {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setStage((current) => (current + 1) % LOADING_STAGES.length);
+    }, STAGE_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, [status]);
 
   const handleUrlChange = useCallback((value: string) => {
     setUrl(value);
@@ -49,6 +91,7 @@ export function TranscriptApp() {
       setError(null);
       setCopied(false);
       setExpanded(false);
+      setStage(0);
 
       try {
         const response = await fetch("/api/transcript", {
@@ -150,6 +193,7 @@ export function TranscriptApp() {
                   disabled={status === "loading"}
                 />
                 <button className="button" type="submit" disabled={status === "loading"}>
+                  {status === "loading" ? <span className="spinner onAccent" aria-hidden="true" /> : null}
                   {status === "loading" ? "Fetching..." : "Get transcript"}
                 </button>
               </div>
@@ -161,13 +205,20 @@ export function TranscriptApp() {
                   {error.message}
                 </p>
               ) : null}
-              {status === "loading" ? <p className="loading">Reading captions...</p> : null}
+              {status === "loading" ? (
+                <p className="loadingRow">
+                  <span className="spinner" aria-hidden="true" />
+                  {LOADING_STAGES[stage]}
+                </p>
+              ) : null}
             </div>
           </>
         ) : (
           <PlaylistPanel />
         )}
       </section>
+
+      {mode === "single" && status === "loading" ? <ResultSkeleton /> : null}
 
       {mode === "single" && status === "success" && transcript ? (
         <ResultCard

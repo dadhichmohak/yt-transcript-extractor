@@ -109,13 +109,17 @@ h1 {
 }
 
 .button {
+  align-items: center;
   background: var(--accent);
   border: 1px solid transparent;
   border-radius: 10px;
   color: #fff;
   cursor: pointer;
+  display: inline-flex;
   font-size: 15px;
   font-weight: 600;
+  gap: 8px;
+  justify-content: center;
   padding: 13px 20px;
   white-space: nowrap;
 }
@@ -155,6 +159,95 @@ h1 {
 
 .loading {
   color: var(--muted);
+}
+
+.spinner {
+  animation: spin 0.7s linear infinite;
+  border: 2px solid var(--border);
+  border-radius: 50%;
+  border-top-color: var(--accent);
+  display: inline-block;
+  flex-shrink: 0;
+  height: 14px;
+  width: 14px;
+}
+
+.spinner.onAccent {
+  border-color: rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+}
+
+.loadingRow {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  gap: 9px;
+}
+
+.skeleton {
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--panel) 25%, var(--panel-strong) 37%, var(--panel) 63%);
+  background-size: 400% 100%;
+  border-radius: 6px;
+  height: 12px;
+}
+
+.skeleton[data-width="title"] {
+  height: 18px;
+  width: 66%;
+}
+
+.skeleton[data-width="meta"] {
+  margin-top: 10px;
+  width: 36%;
+}
+
+.skeleton[data-width="long"] {
+  width: 94%;
+}
+
+.skeleton[data-width="full"] {
+  width: 100%;
+}
+
+.skeleton[data-width="medium"] {
+  width: 78%;
+}
+
+.skeleton[data-width="short"] {
+  width: 52%;
+}
+
+.skeletonStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2.4s;
+  }
+
+  .skeleton {
+    animation: none;
+  }
 }
 
 .result {

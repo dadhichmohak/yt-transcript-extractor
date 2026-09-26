@@ -7,6 +7,7 @@ import {
   YoutubeTranscriptNotAvailableLanguageError,
   YoutubeTranscriptTooManyRequestError,
   YoutubeTranscriptVideoUnavailableError,
+  type FetchParams,
   type TranscriptSegment,
 } from "youtube-transcript-plus";
 
@@ -103,6 +104,60 @@ export function cleanTranscriptText(segments: TextSegment[]): string {
 
 function selectThumbnail(thumbnails: { url: string }[]): string | null {
   return thumbnails.at(-1)?.url ?? null;
+}
+
+const INNERTUBE_API_KEY_PATTERN = /"INNERTUBE_API_KEY":"[^"]+"/;
+
+function blockedError(): TranscriptServiceError {
+  return new TranscriptServiceError(
+    "YOUTUBE_BLOCKED",
+    "YouTube would not serve this video to the server. Datacenter IPs (such as Vercel's) are frequently blocked, so transcripts cannot be fetched from this deployment. Try the local or VPS deployment instead.",
+    503,
+  );
+}
+
+function rawFetch(params: FetchParams): Promise<Response> {
+  return fetch(params.url, {
+    method: params.method ?? "GET",
+    headers: {
+      ...(params.userAgent ? { "User-Agent": params.userAgent } : {}),
+      ...params.headers,
+    },
+    body: params.body,
+    signal: params.signal,
+    redirect: "follow",
+  });
+}
+
+async function guardedVideoFetch(params: FetchParams): Promise<Response> {
+  const response = await rawFetch(params);
+  const body = await response.clone().text();
+
+  if (response.url.includes("consent.youtube.com") || !INNERTUBE_API_KEY_PATTERN.test(body)) {
+    throw blockedError();
+  }
+
+  return response;
+}
+
+async function guardedPlayerFetch(params: FetchParams): Promise<Response> {
+  const response = await rawFetch(params);
+
+  if (!response.ok) {
+    throw blockedError();
+  }
+
+  return response;
+}
+
+async function guardedTranscriptFetch(params: FetchParams): Promise<Response> {
+  const response = await rawFetch(params);
+
+  if (!response.ok && response.status !== 429) {
+    throw blockedError();
+  }
+
+  return response;
 }
 
 function getTimeoutMs(): number {
@@ -226,6 +281,9 @@ async function fetchCaptionTranscript(
     retryDelay: 500,
     cache: transcriptCache,
     signal: parentSignal,
+    videoFetch: guardedVideoFetch,
+    playerFetch: guardedPlayerFetch,
+    transcriptFetch: guardedTranscriptFetch,
   });
 
   const segments = result.segments;

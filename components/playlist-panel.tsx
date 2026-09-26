@@ -259,6 +259,7 @@ export function PlaylistPanel() {
             disabled={loadingPlaylist || running}
           />
           <button className="button" type="submit" disabled={loadingPlaylist || running}>
+            {loadingPlaylist ? <span className="spinner onAccent" aria-hidden="true" /> : null}
             {loadingPlaylist ? "Loading..." : "Load playlist"}
           </button>
         </div>
@@ -274,7 +275,28 @@ export function PlaylistPanel() {
             {playlistError}
           </p>
         ) : null}
+        {loadingPlaylist ? (
+          <p className="loadingRow">
+            <span className="spinner" aria-hidden="true" />
+            Loading the playlist from YouTube...
+          </p>
+        ) : null}
       </div>
+
+      {loadingPlaylist ? (
+        <section className="playlist" aria-hidden="true">
+          <div className="skeletonStack">
+            <div className="skeleton" data-width="title" />
+            <div className="skeleton" data-width="meta" />
+          </div>
+          <div className="skeletonStack">
+            <div className="skeleton" data-width="full" />
+            <div className="skeleton" data-width="medium" />
+            <div className="skeleton" data-width="full" />
+            <div className="skeleton" data-width="short" />
+          </div>
+        </section>
+      ) : null}
 
       {playlist ? (
         <section className="playlist">
@@ -305,6 +327,7 @@ export function PlaylistPanel() {
                 onClick={runTranscription}
                 disabled={running || chosen.length === 0}
               >
+                {running ? <span className="spinner onAccent" aria-hidden="true" /> : null}
                 {running ? "Transcribing..." : `Transcribe ${chosen.length} video${chosen.length === 1 ? "" : "s"}`}
               </button>
             </div>
@@ -338,15 +361,20 @@ export function PlaylistPanel() {
                   </label>
                   <span className="videoMeta">
                     {formatDuration(video.lengthSeconds)} &middot;{" "}
-                    {item?.status === "loading"
-                      ? "working..."
-                      : item?.status === "pending"
-                        ? "queued"
-                        : item?.status === "failed"
-                          ? "failed"
-                          : doneTranscript
-                            ? `${wordCount} words`
-                            : "not started"}
+                    {item?.status === "loading" ? (
+                      <span className="loadingRow">
+                        <span className="spinner" aria-hidden="true" />
+                        working
+                      </span>
+                    ) : item?.status === "pending" ? (
+                      "queued"
+                    ) : item?.status === "failed" ? (
+                      "failed"
+                    ) : doneTranscript ? (
+                      `${wordCount} words`
+                    ) : (
+                      "not started"
+                    )}
                   </span>
                   {doneTranscript ? (
                     <div className="videoActions">

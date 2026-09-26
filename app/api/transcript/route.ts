@@ -95,8 +95,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     });
   } catch (error) {
     if (error instanceof TranscriptServiceError) {
+      console.error(`[transcript] ${videoId} failed code=${error.code} status=${error.status} message=${error.message}`);
+
       return errorResponse(error);
     }
+
+    console.error(`[transcript] ${videoId} failed unexpectedly`, error);
 
     return NextResponse.json(
       {
